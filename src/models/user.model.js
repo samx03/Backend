@@ -26,15 +26,15 @@ const userSchema = new Schema(
       index: true,
     },
     avatar: {
-      type: String, //Cloudinary url
+      type: String, // cloudinary url
       required: true,
     },
     coverImage: {
-      type: String,
+      type: String, // cloudinary url
     },
     watchHistory: [
       {
-        type: Schema.Types.ObjectId(),
+        type: Schema.Types.ObjectId,
         ref: "Video",
       },
     ],
@@ -76,7 +76,6 @@ userSchema.methods.generateAccessToken = function () {
     }
   );
 };
-
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
