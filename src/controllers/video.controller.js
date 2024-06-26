@@ -132,6 +132,14 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
 
+  const video = await Video.findById(videoId);
+  if (video?.owner.toString() !== req.user?._id.toString()) {
+    throw new ApiError(
+      400,
+      "You cannot update this video since you are not the owner"
+    );
+  }
+
   if (!title || !description) {
     throw new ApiError(401, "Title or description is required");
   }
@@ -170,6 +178,14 @@ export const updateVideo = asyncHandler(async (req, res) => {
 export const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
+  const video = await Video.findById(videoId);
+  if (video?.owner.toString() !== req.user?._id) {
+    throw new ApiError(
+      400,
+      "You cannot update this video since you are not the owner"
+    );
+  }
+
   const deletedVideo = await Video.findByIdAndDelete(videoId);
 
   if (!deletedVideo) {
@@ -183,6 +199,14 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 
 export const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+
+  const video = await Video.findById(videoId);
+  if (video?.owner.toString() !== req.user?._id) {
+    throw new ApiError(
+      400,
+      "You cannot update this video since you are not the owner"
+    );
+  }
 
   const currentVideo = await Video.findById(videoId);
   if (!currentVideo) {
