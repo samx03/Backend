@@ -28,14 +28,14 @@ const createTweet = asyncHandler(async (req, res) => {
 const getUserTweets = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
-  if (!userId) {
-    throw new ApiError(404, "User id is required");
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(404, "Invalid user Id");
   }
 
   const fetchedTweets = await Tweet.find({ owner: userId });
 
   if (!fetchedTweets) {
-    throw new ApiError(404, "Something went wrong while fetching user tweets");
+    throw new ApiError(400, "Something went wrong while fetching user tweets");
   }
 
   return res
