@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -121,7 +121,13 @@ export const publishAVideo = asyncHandler(async (req, res) => {
 export const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid Id");
+  }
   const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
 
   return res
     .status(200)
@@ -132,7 +138,14 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
 
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
   const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
   if (video?.owner.toString() !== req.user?._id.toString()) {
     throw new ApiError(
       400,
@@ -178,8 +191,15 @@ export const updateVideo = asyncHandler(async (req, res) => {
 export const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
   const video = await Video.findById(videoId);
-  if (video?.owner.toString() !== req.user?._id) {
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+  if (video?.owner.toString() !== req.user?._id.toString()) {
     throw new ApiError(
       400,
       "You cannot update this video since you are not the owner"
@@ -200,8 +220,15 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 export const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
   const video = await Video.findById(videoId);
-  if (video?.owner.toString() !== req.user?._id) {
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+  if (video?.owner.toString() !== req.user?._id.toString()) {
     throw new ApiError(
       400,
       "You cannot update this video since you are not the owner"
