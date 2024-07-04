@@ -48,17 +48,21 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         localField: "videos",
         foreignField: "_id",
         as: "videos",
-        pipeline: [
-          {
-            $project: {
-              thumbnail: 1,
-              title: 1,
-              duration: 1,
-              owner: 1,
-              createdAt: 1,
-            },
-          },
-        ],
+      },
+    },
+    {
+      $addFields: {
+        totalVideos: {
+          $size: "$videos",
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        totalVideos: 1,
+        createdAt: 1,
       },
     },
   ]);
@@ -104,17 +108,50 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         localField: "videos",
         foreignField: "_id",
         as: "videos",
-        pipeline: [
-          {
-            $project: {
-              thumbnail: 1,
-              title: 1,
-              duration: 1,
-              owner: 1,
-              createdAt: 1,
-            },
-          },
-        ],
+      },
+    },
+    {
+      $match: {
+        "videos.isPublished": true,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $addFields: {
+        totalVideos: {
+          $size: "$videos",
+        },
+        playlistOwner: {
+          $first: "$owner",
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        description: 1,
+        videos: {
+          _id: 1,
+          thumbnail: 1,
+          title: 1,
+          duration: 1,
+          createdAt: 1,
+        },
+        playlistOwner: {
+          _id: 1,
+          username: 1,
+          avatar: 1,
+        },
+        totalVideos: 1,
+        createdAt: 1,
       },
     },
   ]);
