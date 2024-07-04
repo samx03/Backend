@@ -8,8 +8,6 @@ import mongoose, { isValidObjectId } from "mongoose";
 const createPlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
 
-  console.log(req.body);
-
   if (!name || !description) {
     throw new ApiError(400, "Playlist name and description are required");
   }
