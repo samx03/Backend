@@ -5,6 +5,7 @@ import { Video } from "../models/video.model.js";
 import { Like } from "../models/like.model.js";
 import { Tweet } from "../models/tweet.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Comment } from "../models/comment.model.js";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -43,7 +44,42 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 });
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
-  //comment not coded yet
+  const { commentId } = req.params;
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "Invalid video Id");
+  }
+
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    throw new ApiError(404, "Comment not found");
+  }
+
+  const alreadyLiked = await Like.findOne({
+    comment: commentId,
+    likedBy: req.user?._id,
+  });
+
+  if (alreadyLiked) {
+    await Like.findByIdAndDelete(alreadyLiked._id);
+    return res.status(200).json(new ApiResponse(200, {}, "Like removed"));
+  } else {
+    const like = await Like.create({
+      comment: commentId,
+      likedBy: req.user?._id,
+    });
+
+    if (!like) {
+      throw new ApiError(
+        400,
+        "Some error occured. You cannot like this comment"
+      );
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, like, "Comment liked successfully"));
+  }
 });
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
@@ -138,4 +174,4 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleVideoLike, toggleTweetLike, getLikedVideos };
+export { toggleVideoLike,toggleCommentLike, toggleTweetLike, getLikedVideos };
