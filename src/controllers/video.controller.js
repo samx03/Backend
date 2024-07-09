@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { User } from "../models/user.model.js";
 
 export const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 5, sortType, sortBy, query, userId } = req.query;
@@ -147,9 +148,34 @@ export const getVideoById = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes",
+        pipeline: [
+          {
+            $project: {
+              likedBy: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
       $addFields: {
         owner: {
           $first: "$owner",
+        },
+        likes: {
+          $size: "$likes",
+        },
+        isLiked: {
+          $cond: {
+            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            then: true,
+            else: false,
+          },
         },
       },
     },
@@ -158,6 +184,12 @@ export const getVideoById = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(404, "Video not found");
   }
+
+  await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }, { new: true });
+
+  await User.findByIdAndUpdate(req.user?._id, {
+    $addToSet: { watchHistory: videoId },
+  });
 
   return res
     .status(200)

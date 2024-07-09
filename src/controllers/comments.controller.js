@@ -33,9 +33,34 @@ const getVideoComments = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "comment",
+        as: "likes",
+        pipeline: [
+          {
+            $project: {
+              likedBy: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
       $addFields: {
         owner: {
           $first: "$owner",
+        },
+        likes: {
+          $size: "$likes",
+        },
+        isLiked: {
+          $cond: {
+            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            then: true,
+            else: false,
+          },
         },
       },
     },
@@ -49,6 +74,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
           avatar: 1,
         },
         createdAt: 1,
+        likes: 1,
+        isLiked: 1,
       },
     },
   ]);

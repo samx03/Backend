@@ -2,7 +2,7 @@ import { Tweet } from "../models/tweet.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 
 const createTweet = asyncHandler(async (req, res) => {
   const { content } = req.body;
@@ -32,7 +32,42 @@ const getUserTweets = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Invalid user Id");
   }
 
-  const fetchedTweets = await Tweet.find({ owner: userId });
+  const fetchedTweets = await Tweet.aggregate([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId),
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "likes",
+        pipeline: [
+          {
+            $project: {
+              likedBy: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        likes: {
+          $size: "$likes" ? "$likes" : 0,
+        },
+        isLiked: {
+          $cond: {
+            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+  ]);
 
   if (!fetchedTweets) {
     throw new ApiError(400, "Something went wrong while fetching user tweets");
